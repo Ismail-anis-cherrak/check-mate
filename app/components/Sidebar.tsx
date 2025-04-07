@@ -122,23 +122,11 @@ const Sidebar: React.FC = () => {
                     : "text-[#718096]"
                 }`}
               />
-              <span className="text-sm font-medium">Settings</span>
+              <span className="text-sm font-medium">Time settings</span>
             </Link>
           </li>
         </ul>
       </nav>
-
-      {/* Log Out */}
-      <div className="p-6 flex justify-center">
-        <a
-          href="#"
-          onClick={handleLogout}
-          className="flex items-center py-2 px-4 text-[#718096] hover:bg-[#F7F9FC] hover:rounded-lg hover:shadow-sm w-48 justify-center transition-all duration-200"
-        >
-          <FaSignOutAlt className="mr-3 text-[#718096]" />
-          <span className="text-sm font-medium">Log out</span>
-        </a>
-      </div>
     </div>
   );
 };
