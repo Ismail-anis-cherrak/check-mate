@@ -39,20 +39,26 @@ export async function POST(req: Request) {
   }
 }
 
-// PUT: Update an employee by ID
-export async function PUT(req: Request) {
+// PUT: Assigner ou mettre à jour un tag RFID pour un employé
+export async function PUT(req: Request, { params }: { params: { id: string } }) {
   await connectDB();
   try {
-    const { id, ...updateData } = await req.json();
+    const { id } = params;
+    const { rfid_tag } = await req.json();
 
-    if (!id) {
-      return NextResponse.json({ error: "Employee ID is required" }, { status: 400 });
+    if (!id || !rfid_tag) {
+      return NextResponse.json({ error: "Employee ID and RFID tag are required" }, { status: 400 });
     }
 
-    // Convert ID to ObjectId
+    // Vérifier si le rfid_tag est déjà utilisé par un autre employé
+    const existingEmployeeWithRfid = await Employee.findOne({ rfid_tag, _id: { $ne: id } });
+    if (existingEmployeeWithRfid) {
+      return NextResponse.json({ error: "This RFID tag is already assigned to another employee" }, { status: 409 });
+    }
+
     const updatedEmployee = await Employee.findByIdAndUpdate(
-      new Types.ObjectId(id),
-      updateData,
+      id,
+      { rfid_tag },
       { new: true }
     );
 
@@ -62,31 +68,33 @@ export async function PUT(req: Request) {
 
     return NextResponse.json(updatedEmployee);
   } catch (error) {
-    console.error("Error updating employee:", error);
-    return NextResponse.json({ error: "Failed to update employee" }, { status: 500 });
+    console.error("Error updating RFID tag:", error);
+    return NextResponse.json({ error: "Failed to update RFID tag" }, { status: 500 });
   }
 }
-
-// DELETE: Remove an employee by ID
-export async function DELETE(req: Request) {
+// DELETE: Supprimer un tag RFID d'un employé
+export async function DELETE(req: Request, { params }: { params: { id: string } }) {
   await connectDB();
   try {
-    const { id } = await req.json();
+    const { id } = params;
 
     if (!id) {
       return NextResponse.json({ error: "Employee ID is required" }, { status: 400 });
     }
 
-    // Convert ID to ObjectId and delete the document
-    const deletedEmployee = await Employee.findByIdAndDelete(new Types.ObjectId(id));
+    const updatedEmployee = await Employee.findByIdAndUpdate(
+      id,
+      { rfid_tag: "" },
+      { new: true }
+    );
 
-    if (!deletedEmployee) {
+    if (!updatedEmployee) {
       return NextResponse.json({ error: "Employee not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ message: "Employee deleted successfully" });
+    return NextResponse.json(updatedEmployee);
   } catch (error) {
-    console.error("Error deleting employee:", error);
-    return NextResponse.json({ error: "Failed to delete employee" }, { status: 500 });
+    console.error("Error removing RFID tag:", error);
+    return NextResponse.json({ error: "Failed to remove RFID tag" }, { status: 500 });
   }
 }
