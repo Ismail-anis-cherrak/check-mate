@@ -1,5 +1,6 @@
 import swaggerJSDoc from 'swagger-jsdoc';
-import { version } from '../../package.json';
+import pkg from '../../package.json';
+const { version } = pkg;
 
 // Define the correct Options type
 interface SwaggerOptions {
