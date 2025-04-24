@@ -4,9 +4,6 @@ import swaggerSpec from '../../lib/swagger';
 
 export async function GET() {
   // Only enable in development
-  if (process.env.NODE_ENV !== 'development') {
-    return NextResponse.json({ message: 'Not found' }, { status: 404 });
-  }
 
   // Convert spec to JSON string
   const specString = JSON.stringify(swaggerSpec, null, 2);
