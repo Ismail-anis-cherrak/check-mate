@@ -1,3 +1,42 @@
+/**
+ * @swagger
+ * /api/employees_today:
+ *   get:
+ *     summary: Get all employees with their attendance status for today
+ *     description: Retrieves all employees and their current status (in, out, or not in yet) for the current day
+ *     tags: [Employees]
+ *     responses:
+ *       200:
+ *         description: List of employees with their status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   _id:
+ *                     type: string
+ *                   first_name:
+ *                     type: string
+ *                   last_name:
+ *                     type: string
+ *                   rfid_tag:
+ *                     type: string
+ *                   department_id:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                       department_name:
+ *                         type: string
+ *                   status:
+ *                     type: string
+ *                     enum: [in, out, not in yet]
+ *       500:
+ *         description: Server error
+ */
+
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import Employee from "@/models/Employee";

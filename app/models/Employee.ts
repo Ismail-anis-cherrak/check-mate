@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 interface IEmployee extends Document {
   rfid_tag: string;
+  pin: Number; 
   first_name: string;
   last_name: string;
   department_id: mongoose.Types.ObjectId;
@@ -17,6 +18,7 @@ const EmployeeSchema = new Schema<IEmployee>(
   {
     rfid_tag: { type: String, required: true, unique: true,
      },
+    pin: { type: Number, required: true },
     first_name: { type: String, required: true },
     last_name: { type: String, required: true },
     department_id: { type: Schema.Types.ObjectId, ref: "Department", required: true },
