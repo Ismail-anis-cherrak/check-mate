@@ -3,8 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 interface ILeave extends Document {
   employee_id: mongoose.Types.ObjectId;
   rfid_tag: string;
-  pin: Number;
-  device_id: string;
+  pin: Number;  
   timestamp: Date;
 }
 
@@ -12,7 +11,6 @@ const LeaveSchema = new Schema<ILeave>({
   employee_id: { type: Schema.Types.ObjectId, ref: "Employee", required: true },
   rfid_tag: { type: String, required: true },
   pin: { type: Number, required: true },
-  device_id: { type: String, required: true },
   timestamp: { type: Date, default: Date.now },
 });
 

@@ -71,10 +71,10 @@ export async function POST(req: Request) {
   try {
       await connectDB(); // Ensure database connection
 
-      const { rfid_tag, device_id, pin } = await req.json();
+      const { rfid_tag, pin } = await req.json();
       console.log(typeof(rfid_tag))
 
-      if (!rfid_tag || !device_id || !pin) {
+      if (!rfid_tag || !pin) {
           return NextResponse.json({ error: "rfid_tag and device_id and pin are required" }, { status: 400 });
       }
 
@@ -92,7 +92,6 @@ export async function POST(req: Request) {
       const attendanceData = {
           employee_id: new mongoose.Types.ObjectId(employee._id), // Ensure ObjectId format
           rfid_tag,
-          device_id,
           pin,
           timestamp: new Date(),
       };
