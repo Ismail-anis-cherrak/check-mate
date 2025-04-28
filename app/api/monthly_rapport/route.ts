@@ -1,3 +1,83 @@
+/**
+ * @swagger
+ * /api/monthly_rapport:
+ *   post:
+ *     summary: Generate monthly attendance report for an employee
+ *     description: Generates a detailed monthly attendance report including presence, absences, late arrivals, and early departures
+ *     tags: [Reports]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - employee_id
+ *             properties:
+ *               employee_id:
+ *                 type: string
+ *                 description: MongoDB ID of the employee
+ *     responses:
+ *       200:
+ *         description: Monthly report generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 employee:
+ *                   type: object
+ *                   properties:
+ *                     name:
+ *                       type: string
+ *                     department:
+ *                       type: object
+ *                       properties:
+ *                         department_name:
+ *                           type: string
+ *                     email:
+ *                       type: string
+ *                 total_days:
+ *                   type: number
+ *                 present_days:
+ *                   type: number
+ *                 absent_days:
+ *                   type: number
+ *                 total_late:
+ *                   type: string
+ *                 total_early_leaves:
+ *                   type: string
+ *                 monthly_presence_rate:
+ *                   type: string
+ *                 daily_reports:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       date:
+ *                         type: string
+ *                       status:
+ *                         type: string
+ *                       entry_time:
+ *                         type: string
+ *                         nullable: true
+ *                       leave_time:
+ *                         type: string
+ *                         nullable: true
+ *                       entered_late_by:
+ *                         type: string
+ *                       left_early_by:
+ *                         type: string
+ *                       presence_duration:
+ *                         type: string
+ *       400:
+ *         description: Missing employee_id in request
+ *       404:
+ *         description: Employee not found
+ *       500:
+ *         description: Server error
+ */
+
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import Attendance from "@/models/Attendance";
