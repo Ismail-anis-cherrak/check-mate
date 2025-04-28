@@ -105,34 +105,61 @@ export async function POST(request: Request) {
     const currentDay = now.getDay(); // 0-6 (Sunday-Saturday)
     const currentTime = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
 
-    // Check if current time falls within any shift
+    // Check if current time falls within any shift (including 1 hour buffer)
     const schedule = employee.schedule_id;
     let isWithinShift = false;
+    let isWithinBuffer = false;
 
     for (const shift of schedule.shifts) {
       const { start_day, end_day, start_time, end_time } = shift;
       
+      // Convert times to Date objects for easier comparison
+      const [startHour, startMin] = start_time.split(':').map(Number);
+      const [endHour, endMin] = end_time.split(':').map(Number);
+      
+      // Create buffer times (1 hour before and after)
+      const bufferStartTime = new Date();
+      bufferStartTime.setHours(startHour - 1, startMin);
+      const bufferStartTimeStr = bufferStartTime.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+      
+      const bufferEndTime = new Date();
+      bufferEndTime.setHours(endHour + 1, endMin);
+      const bufferEndTimeStr = bufferEndTime.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+
       // Handle shifts that span across days
       if (start_day <= end_day) {
         if (currentDay >= start_day && currentDay <= end_day) {
           if (start_time <= currentTime && currentTime <= end_time) {
             isWithinShift = true;
           }
+          if (bufferStartTimeStr <= currentTime && currentTime <= bufferEndTimeStr) {
+            isWithinBuffer = true;
+          }
         }
       } else {
-        // For shifts crossing midnight (e.g., 21:00 to 06:00)
-        if (currentDay === start_day && currentTime >= start_time) {
-          isWithinShift = true;
-        } else if (currentDay === end_day && currentTime <= end_time) {
-          isWithinShift = true;
+        // For shifts crossing midnight
+        if (currentDay === start_day) {
+          if (currentTime >= start_time) {
+            isWithinShift = true;
+          }
+          if (currentTime >= bufferStartTimeStr) {
+            isWithinBuffer = true;
+          }
+        } else if (currentDay === end_day) {
+          if (currentTime <= end_time) {
+            isWithinShift = true;
+          }
+          if (currentTime <= bufferEndTimeStr) {
+            isWithinBuffer = true;
+          }
         }
       }
     }
 
-    if (!isWithinShift) {
+    if (!isWithinShift && !isWithinBuffer) {
       return NextResponse.json({ 
         access: false,
-        message: "Not within scheduled shift"
+        message: "Not within scheduled shift or buffer period"
       });
     }
 
