@@ -106,7 +106,7 @@ const Sidebar: React.FC = () => {
               <span className="text-sm font-medium">Employees</span>
             </Link>
           </li>
-          <li className="w-48 my-2">
+          {/* <li className="w-48 my-2">
             <Link
               href="/settings"
               className={`flex items-center py-4 px-4 rounded-lg w-full justify-center transition-all duration-200 ${
@@ -124,7 +124,7 @@ const Sidebar: React.FC = () => {
               />
               <span className="text-sm font-medium">Time settings</span>
             </Link>
-          </li>
+          </li> */}
         </ul>
       </nav>
     </div>

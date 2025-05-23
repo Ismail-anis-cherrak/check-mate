@@ -71,12 +71,10 @@ interface Employee {
   first_name: string;
   last_name: string;
   fullName: string;
-  department: { name: string };
-  role: string;
+  department_id: { _id: string; department_name: string };
   rfid_tag: string;
   email: string;
   phone_number: string;
-  status: string;
   created_at: string;
   updated_at: string;
 }
@@ -84,14 +82,32 @@ interface Employee {
 export default function EmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [search, setSearch] = useState("");
-  const [departmentFilter, setDepartmentFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isDetailVisible, setIsDetailVisible] = useState(false);
   const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(true);
+  const [departments, setDepartments] = useState<{ _id: string; department_name: string }[]>([]);
+
+  // Fetch departments for the dropdown
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const response = await fetch("/api/departments");
+        if (!response.ok) {
+          throw new Error(`Failed to fetch departments: ${response.statusText}`);
+        }
+        const data = await response.json();
+        console.log("Fetched Departments:", data);
+        setDepartments(data);
+      } catch (error) {
+        console.error("Erreur lors de la récupération des départements:", error);
+        message.error("Failed to load departments");
+      }
+    };
+
+    fetchDepartments();
+  }, []);
 
   // Récupérer les employés depuis l'API au chargement de la page
   useEffect(() => {
@@ -105,10 +121,11 @@ export default function EmployeesPage() {
         // Adapter les données pour correspondre à la structure attendue
         const formattedData = data.map((emp: any) => ({
           ...emp,
-          employee_id: emp._id, // Utiliser _id comme employee_id
+          employee_id: emp._id,
           fullName: `${emp.first_name} ${emp.last_name}`,
-          department: emp.department_id ? emp.department_id : { name: emp.department || "N/A" },
-          status: emp.status.charAt(0).toUpperCase() + emp.status.slice(1), // Normaliser "active" -> "Active"
+          department_id: emp.department_id || { _id: "", department_name: "N/A" },
+          created_at: emp.createdAt,
+          updated_at: emp.updatedAt,
         }));
         setEmployees(formattedData);
         setLoading(false);
@@ -124,22 +141,21 @@ export default function EmployeesPage() {
 
   // Initialiser le formulaire avec les données de l'employé courant
   useEffect(() => {
-    if (currentEmployee && isEditing) {
+    if (currentEmployee) {
+      console.log("Current Employee:", currentEmployee);
+      console.log("Departments:", departments);
       form.setFieldsValue({
-        first_name: currentEmployee.first_name,
-        last_name: currentEmployee.last_name,
-        employee_id: currentEmployee.employee_id,
-        department: currentEmployee.department?.name,
-        role: currentEmployee.role,
-        rfid_tag: currentEmployee.rfid_tag,
-        email: currentEmployee.email,
-        phone_number: currentEmployee.phone_number,
-        status: currentEmployee.status,
+        first_name: currentEmployee.first_name || "",
+        last_name: currentEmployee.last_name || "",
+        department_id: currentEmployee.department_id?._id || undefined,
+        rfid_tag: currentEmployee.rfid_tag || "",
+        email: currentEmployee.email || "",
+        phone_number: currentEmployee.phone_number || "",
       });
     } else {
       form.resetFields();
     }
-  }, [currentEmployee, isEditing, form]);
+  }, [currentEmployee, form, departments]);
 
   // Filtrer les employés
   const filteredEmployees = employees.filter((e) => {
@@ -152,87 +168,72 @@ export default function EmployeesPage() {
           e.employee_id.toLowerCase().includes(search.toLowerCase()) ||
           (e.rfid_tag && e.rfid_tag.toLowerCase().includes(search.toLowerCase()));
 
-    const matchesDepartment = departmentFilter
-      ? e.department?.name === departmentFilter
-      : true;
-    const matchesStatus = statusFilter
-      ? e.status.toLowerCase() === statusFilter.toLowerCase()
-      : true;
-
-    return matchesSearch && matchesDepartment && matchesStatus;
+    return matchesSearch;
   });
 
-  // Gérer la soumission du formulaire pour l'assignation/mise à jour RFID
+  // Gérer la soumission du formulaire pour la mise à jour des données de l'employé
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
       if (currentEmployee) {
-        const response = await fetch(`/api/employees/${currentEmployee._id}/rfid`, {
+        const updatedData = {
+          id: currentEmployee._id,
+          first_name: values.first_name,
+          last_name: values.last_name,
+          department_id: values.department_id,
+          rfid_tag: values.rfid_tag,
+          email: values.email,
+          phone_number: values.phone_number,
+        };
+
+        console.log("Sending PUT request with data:", updatedData);
+
+        const response = await fetch("/api/employees", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ rfid_tag: values.rfid_tag }),
+          body: JSON.stringify(updatedData),
         });
 
+        const responseData = await response.json();
+        console.log("PUT response:", responseData);
+
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || "Failed to update RFID tag");
+          throw new Error(responseData.error || "Failed to update employee");
         }
 
-        const updatedEmployee = await response.json();
         setEmployees((prev) =>
           prev.map((emp) =>
-            emp._id === currentEmployee._id ? { ...emp, rfid_tag: updatedEmployee.rfid_tag } : emp
+            emp._id === currentEmployee._id
+              ? {
+                  ...emp,
+                  first_name: updatedData.first_name,
+                  last_name: updatedData.last_name,
+                  fullName: `${updatedData.first_name} ${updatedData.last_name}`,
+                  department_id:
+                    departments.find((dept) => dept._id === updatedData.department_id) || emp.department_id,
+                  rfid_tag: updatedData.rfid_tag,
+                  email: updatedData.email,
+                  phone_number: updatedData.phone_number,
+                  updated_at: responseData.updated_at || new Date().toISOString(),
+                }
+              : emp
           )
         );
         setIsModalVisible(false);
         form.resetFields();
         setCurrentEmployee(null);
-        message.success("RFID tag updated successfully");
+        message.success("Employee updated successfully");
       }
     } catch (error: any) {
-      console.error("Erreur lors de la mise à jour du tag RFID:", error);
-      message.error(error.message || "Failed to update RFID tag");
+      console.error("Erreur lors de la mise à jour de l'employé:", error);
+      message.error(error.message || "Failed to update employee");
     }
   };
 
-  // Basculer le statut de l'employé (actif/inactif)
-  const toggleEmployeeStatus = async (employee: Employee) => {
-    try {
-      const newStatus = employee.status === "Active" ? "inactive" : "active"; // Utiliser des minuscules pour l'API
-      const response = await fetch("/api/employees", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: employee._id, status: newStatus }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to update employee status");
-      }
-
-      const updatedEmployee = await response.json();
-      setEmployees((prev) =>
-        prev.map((emp) =>
-          emp._id === employee._id
-            ? {
-                ...emp,
-                status: updatedEmployee.status.charAt(0).toUpperCase() + updatedEmployee.status.slice(1),
-              }
-            : emp
-        )
-      );
-      message.success("Employee status updated successfully");
-    } catch (error) {
-      console.error("Erreur lors de la mise à jour du statut:", error);
-      message.error("Failed to update employee status");
-    }
-  };
-
-  // Afficher le modal pour l'assignation/édition RFID
-  const showRfidModal = (employee: Employee) => {
+  // Afficher le modal pour l'édition des données de l'employé
+  const showEditModal = (employee: Employee) => {
+    console.log("Opening edit modal for employee:", employee);
     setCurrentEmployee(employee);
-    form.setFieldsValue({
-      rfid_tag: employee.rfid_tag || "",
-    });
     setIsModalVisible(true);
   };
 
@@ -293,9 +294,9 @@ export default function EmployeesPage() {
     },
     {
       title: "Department",
-      dataIndex: "department",
-      key: "department",
-      render: (department: { name: string }) => department?.name || "N/A",
+      dataIndex: "department_id",
+      key: "department_id",
+      render: (department_id: { department_name: string }) => department_id?.department_name || "N/A",
     },
     {
       title: "RFID Tag",
@@ -305,28 +306,22 @@ export default function EmployeesPage() {
         rfid_tag ? <Tag color="blue">{rfid_tag}</Tag> : <Tag color="red">Not Assigned</Tag>,
     },
     {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-      render: (status: string) => <Tag color={status === "Active" ? "green" : "red"}>{status}</Tag>,
-    },
-    {
-      title: "RFID Actions",
+      title: "Actions",
       key: "actions",
       render: (_: any, record: Employee) => (
         <Space size="small">
           {record.rfid_tag ? (
             <>
-              <Tooltip title="Edit RFID">
-                <Button icon={<EditOutlined />} onClick={() => showRfidModal(record)} type="primary" size="small" />
+              <Tooltip title="Edit Employee">
+                <Button icon={<EditOutlined />} onClick={() => showEditModal(record)} type="primary" size="small" />
               </Tooltip>
               <Tooltip title="Remove RFID">
                 <Button icon={<StopOutlined />} onClick={() => removeRfid(record)} danger size="small" />
               </Tooltip>
             </>
           ) : (
-            <Tooltip title="Assign RFID">
-              <Button icon={<IdcardOutlined />} onClick={() => showRfidModal(record)} type="primary" size="small" />
+            <Tooltip title="Assign/Edit Employee">
+              <Button icon={<IdcardOutlined />} onClick={() => showEditModal(record)} type="primary" size="small" />
             </Tooltip>
           )}
           <Tooltip title="View Details">
@@ -347,12 +342,12 @@ export default function EmployeesPage() {
 
   return (
     <div className="p-6">
-      <Title level={2}>Employee RFID Management</Title>
+      <Title level={2}>Employee Management</Title>
 
       {/* Search and Filter Bar */}
       <Card className="mb-4">
         <Row gutter={16} align="middle">
-          <Col xs={24} sm={8} md={6} lg={6}>
+          <Col xs={24} sm={12} md={12} lg={12}>
             <Input
               placeholder="Search by name or ID"
               value={search}
@@ -361,34 +356,7 @@ export default function EmployeesPage() {
               allowClear
             />
           </Col>
-          <Col xs={24} sm={8} md={5} lg={4}>
-            <Select
-              placeholder="Filter by Department"
-              style={{ width: "100%" }}
-              value={departmentFilter}
-              onChange={setDepartmentFilter}
-              allowClear
-            >
-              <Option value="Executive">Executive</Option>
-              <Option value="Administration">Administration</Option>
-              <Option value="IT">IT</Option>
-              <Option value="HR">HR</Option>
-              <Option value="Finance">Finance</Option>
-            </Select>
-          </Col>
-          <Col xs={24} sm={8} md={5} lg={4}>
-            <Select
-              placeholder="Filter by Status"
-              style={{ width: "100%" }}
-              value={statusFilter}
-              onChange={setStatusFilter}
-              allowClear
-            >
-              <Option value="Active">Active</Option>
-              <Option value="Inactive">Inactive</Option>
-            </Select>
-          </Col>
-          <Col xs={24} sm={8} md={5} lg={4}>
+          <Col xs={24} sm={12} md={6} lg={6}>
             <Select
               placeholder="RFID Status"
               style={{ width: "100%" }}
@@ -407,9 +375,9 @@ export default function EmployeesPage() {
         <Table dataSource={filteredEmployees} columns={columns} rowKey="_id" pagination={{ pageSize: 10 }} />
       </Card>
 
-      {/* RFID Management Modal */}
+      {/* Employee Edit Modal */}
       <Modal
-        title={currentEmployee?.rfid_tag ? "Edit RFID Tag" : "Assign RFID Tag"}
+        title="Edit Employee"
         open={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         footer={[
@@ -417,24 +385,59 @@ export default function EmployeesPage() {
             Cancel
           </Button>,
           <Button key="submit" type="primary" onClick={handleSubmit}>
-            {currentEmployee?.rfid_tag ? "Update RFID" : "Assign RFID"}
+            Save Changes
           </Button>,
         ]}
       >
-        {currentEmployee && (
+        {currentEmployee ? (
           <Form form={form} layout="vertical">
             <div className="mb-4">
-              <Text strong>Employee: </Text>
-              <Text>{currentEmployee.fullName}</Text>
-            </div>
-            <div className="mb-4">
-              <Text strong>ID: </Text>
+              <Text strong>Employee ID: </Text>
               <Text>{currentEmployee.employee_id}</Text>
             </div>
-            <Form.Item name="rfid_tag" label="RFID Tag" rules={[{ required: true, message: "Please enter RFID tag" }]}>
+            <Form.Item
+              name="first_name"
+              label="First Name"
+              rules={[{ required: true, message: "Please enter first name" }]}
+            >
+              <Input placeholder="Enter first name" />
+            </Form.Item>
+            <Form.Item
+              name="last_name"
+              label="Last Name"
+              rules={[{ required: true, message: "Please enter last name" }]}
+            >
+              <Input placeholder="Enter last name" />
+            </Form.Item>
+            <Form.Item
+              name="department_id"
+              label="Department"
+              rules={[{ required: true, message: "Please select a department" }]}
+            >
+              <Select placeholder="Select department" value={currentEmployee.department_id?._id}>
+                {departments.map((dept) => (
+                  <Option key={dept._id} value={dept._id}>
+                    {dept.department_name}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+            <Form.Item name="rfid_tag" label="RFID Tag">
               <Input placeholder="Enter RFID tag" />
             </Form.Item>
+            <Form.Item
+              name="email"
+              label="Email"
+              rules={[{ type: "email", message: "Please enter a valid email" }]}
+            >
+              <Input placeholder="Enter email" />
+            </Form.Item>
+            <Form.Item name="phone_number" label="Phone Number">
+              <Input placeholder="Enter phone number" />
+            </Form.Item>
           </Form>
+        ) : (
+          <p>Loading employee data...</p>
         )}
       </Modal>
 
@@ -447,29 +450,16 @@ export default function EmployeesPage() {
           <Button key="close" onClick={() => setIsDetailVisible(false)}>
             Close
           </Button>,
-          currentEmployee && currentEmployee.rfid_tag ? (
-            <Button
-              key="edit-rfid"
-              type="primary"
-              onClick={() => {
-                setIsDetailVisible(false);
-                showRfidModal(currentEmployee as Employee);
-              }}
-            >
-              Edit RFID
-            </Button>
-          ) : (
-            <Button
-              key="assign-rfid"
-              type="primary"
-              onClick={() => {
-                setIsDetailVisible(false);
-                showRfidModal(currentEmployee as Employee);
-              }}
-            >
-              Assign RFID
-            </Button>
-          ),
+          <Button
+            key="edit"
+            type="primary"
+            onClick={() => {
+              setIsDetailVisible(false);
+              showEditModal(currentEmployee as Employee);
+            }}
+          >
+            Edit Employee
+          </Button>,
         ]}
         width={1000}
       >
@@ -492,13 +482,6 @@ export default function EmployeesPage() {
                       <Title level={4} className="mt-2 mb-0">
                         {currentEmployee.fullName}
                       </Title>
-                      <Text type="secondary">{currentEmployee.role || "N/A"}</Text>
-                      <div className="mt-2">
-                        <Badge
-                          status={currentEmployee.status === "Active" ? "success" : "error"}
-                          text={currentEmployee.status}
-                        />
-                      </div>
                     </div>
                     <Divider />
                     <div>
@@ -508,7 +491,7 @@ export default function EmployeesPage() {
                       </p>
                       <p>
                         <TeamOutlined className="mr-2" />
-                        <Text strong>Department:</Text> {currentEmployee.department?.name || "N/A"}
+                        <Text strong>Department:</Text> {currentEmployee.department_id?.department_name || "N/A"}
                       </p>
                       <p>
                         <MailOutlined className="mr-2" />
@@ -545,14 +528,6 @@ export default function EmployeesPage() {
                       <Col span={12}>
                         <Text strong>RFID Tag:</Text>
                         <div>{currentEmployee.rfid_tag || "Not Assigned"}</div>
-                      </Col>
-                      <Col span={12}>
-                        <Text strong>Status:</Text>
-                        <div>
-                          <Tag color={currentEmployee.status === "Active" ? "green" : "red"}>
-                            {currentEmployee.status}
-                          </Tag>
-                        </div>
                       </Col>
                     </Row>
                   </Card>
