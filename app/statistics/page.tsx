@@ -92,7 +92,7 @@ export default function StatisticsPage() {
             console.error("Failed to fetch monthly report for", emp._id);
             continue;
           }
-
+//comment
           const dailyRes = await fetch("/api/daily_rapport", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
