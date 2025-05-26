@@ -4,9 +4,9 @@ import React, { useState, useEffect } from "react";
 import { Table, Spin, Button, message, Tag, Modal, Descriptions } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable"; // Import the autoTable function directly
+import autoTable from "jspdf-autotable";
 
-// App name for logo (replace with your actual app name)
+
 const APP_NAME = "CheckMate";
 
 interface Employee {
@@ -323,32 +323,32 @@ export default function StatisticsPage() {
         parseFloat(b.monthly_presence_rate),
       width: 110,
     },
-    {
-      title: "Present",
-      dataIndex: "present_days",
-      key: "present_days",
-      sorter: (a, b) => a.present_days - b.present_days,
-      width: 90,
-    },
-    {
-      title: "Absent",
-      dataIndex: "absent_days",
-      key: "absent_days",
-      sorter: (a, b) => a.absent_days - b.absent_days,
-      width: 90,
-    },
-    {
-      title: "Total Late",
-      dataIndex: "total_late",
-      key: "total_late",
-      width: 90,
-    },
-    {
-      title: "Early Leaves",
-      dataIndex: "total_early_leaves",
-      key: "total_early_leaves",
-      width: 100,
-    },
+    // {
+    //   title: "Present",
+    //   dataIndex: "present_days",
+    //   key: "present_days",
+    //   sorter: (a, b) => a.present_days - b.present_days,
+    //   width: 90,
+    // },
+    // {
+    //   title: "Absent",
+    //   dataIndex: "absent_days",
+    //   key: "absent_days",
+    //   sorter: (a, b) => a.absent_days - b.absent_days,
+    //   width: 90,
+    // },
+    // {
+    //   title: "Total Late",
+    //   dataIndex: "total_late",
+    //   key: "total_late",
+    //   width: 90,
+    // },
+    // {
+    //   title: "Early Leaves",
+    //   dataIndex: "total_early_leaves",
+    //   key: "total_early_leaves",
+    //   width: 100,
+    // },
     {
       title: "Daily Status",
       dataIndex: "daily_status",
@@ -368,18 +368,18 @@ export default function StatisticsPage() {
       ),
       width: 100,
     },
-    {
-      title: "Daily Late",
-      dataIndex: "daily_late",
-      key: "daily_late",
-      width: 90,
-    },
-    {
-      title: "Daily Early",
-      dataIndex: "daily_early_leave",
-      key: "daily_early_leave",
-      width: 100,
-    },
+    // {
+    //   title: "Daily Late",
+    //   dataIndex: "daily_late",
+    //   key: "daily_late",
+    //   width: 90,
+    // },
+    // {
+    //   title: "Daily Early",
+    //   dataIndex: "daily_early_leave",
+    //   key: "daily_early_leave",
+    //   width: 100,
+    // },
     {
       title: "Actions",
       key: "actions",

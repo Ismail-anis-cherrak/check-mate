@@ -39,7 +39,7 @@ const Sidebar: React.FC = () => {
   return (
     <div className="w-64 h-screen bg-[#F0F1F5] flex flex-col font-sans">
       {/* Logo */}
-      <div className="p-6 flex justify-center items-center">
+      <div className="p-6 flex justify-center items-center"> // ken p-6
         <div className="flex items-center">
           <h1 className="text-2xl font-bold text-[#5F6868]">CheckMate</h1>
           <div className="w-px h-8 bg-[#D3D3D3] ml-4"></div>
