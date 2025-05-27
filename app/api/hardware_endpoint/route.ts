@@ -178,7 +178,7 @@ export async function POST(request: Request) {
         employee_id: employee._id,
         rfid_tag,
         pin,
-        timestamp: now
+        timestamp: new Date()
       });
       await attendance.save();
       
@@ -192,7 +192,7 @@ export async function POST(request: Request) {
         employee_id: employee._id,
         rfid_tag,
         pin,
-        timestamp: now
+        timestamp: new Date()
       });
       await leave.save();
 
