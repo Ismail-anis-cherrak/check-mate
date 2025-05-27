@@ -172,6 +172,11 @@ export async function POST(request: Request) {
       timestamp: { $gte: startOfDay, $lte: endOfDay }
     });
 
+    const existingLeave = await Leave.findOne({
+      employee_id: employee._id,
+      timestamp: { $gte: startOfDay, $lte: endOfDay }
+    });
+
     if (!existingAttendance) {
       // Create attendance record
       const attendance = new Attendance({
@@ -186,7 +191,7 @@ export async function POST(request: Request) {
         access: true,
         action: "attendance_recorded"
       });
-    } else {
+    } else if (!existingLeave) {
       // Create leave record
       const leave = new Leave({
         employee_id: employee._id,
@@ -199,6 +204,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ 
         access: true,
         action: "leave_recorded"
+      });
+    } else {
+      return NextResponse.json({ 
+        access: false,
+        message: "Employee already has an attendance or leave record for today"
       });
     }
 
